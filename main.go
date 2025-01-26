@@ -12,5 +12,6 @@ func main() {
 	}
 
 	fmt.Println("Scanning the given direcotory")
-	mediaProcessor.DirWathcer("/home/charan/Videos/YouTube")
+	// mediaProcessor.DirWathcer("/home/charan/Videos/YouTube")
+	mediaProcessor.PostgreSQL()
 }

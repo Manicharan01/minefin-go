@@ -1,0 +1,19 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:latest
+    container_name: minefin-postgres
+    environment:
+      POSTGRES_DB: minfin-medialist
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: root
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persist database data
+      - postgres_data:/var/lib/postgresql/data
+      # Optional: Add initialization scripts
+      # - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  postgres_data:
