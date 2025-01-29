@@ -4,18 +4,25 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
 
 func (m MediaFileProcessor) PostgreSQL() {
+	// Loading .ENV file
+	err := godotenv.Load(".ENV")
+	if err != nil {
+		log.Fatalf("Error while loading .ENV variables: %v", err)
+	}
+
 	// Database connection parameters
-	host := "localhost"
-	port := "5432"
-	user := "admin"
-	password := "root"
-	dbname := "minfin-medialist"
+	host := os.Getenv("POSTGRES_URL")
+	port := os.Getenv("POSTGRES_PORT")
+	user := os.Getenv("POSTGRES_USERNAME")
+	password := os.Getenv("POSTGRES_PASSWORD")
+	dbname := os.Getenv("POSTGRES_DB_NAME")
 
 	// Create connection URL
 	connectionURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s",

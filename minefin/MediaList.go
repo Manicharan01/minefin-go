@@ -12,7 +12,7 @@ type MediaList struct {
 	mime_type   string
 	created_at  time.Time
 	modified_at time.Time
-	// checksum    string
+	checksum    string
 
 	//Media metadata
 	duration       int

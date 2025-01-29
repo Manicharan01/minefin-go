@@ -4,15 +4,13 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
-	"encoding/json"
 	"fmt"
 	"image"
 	"image/jpeg"
 	"io"
-	"io/ioutil"
 	"log"
 	"math/rand"
-	"net/http"
+	"mime"
 	"os"
 	"strconv"
 	"strings"
@@ -26,9 +24,28 @@ import (
 type MediaFileProcessor struct {
 	Thumbnail_dir    string
 	SupportedFormats []string
+	Directory        string
 }
 
-func (m MediaFileProcessor) ScanDirectory(path string) []MediaList {
+func (m MediaFileProcessor) ScanDirectory() {
+	libraryManager := LibraryManager{
+		LibraryPath: m.Directory,
+	}
+
+	tableNames := libraryManager.GetTableNames()
+	fmt.Println(tableNames)
+	if !contains(tableNames, "users") {
+		libraryManager.CreateTable("users")
+	}
+	if !contains(tableNames, "mediaitems") {
+		libraryManager.CreateTable("mediaitems")
+	}
+	if !contains(tableNames, "usermediaprogress") {
+		libraryManager.CreateTable("usermediaprogress")
+	}
+}
+
+func (m MediaFileProcessor) getMetadata(path string) []MediaList {
 	var media_list []MediaList
 
 	fmt.Println("Reading the directory")
@@ -71,16 +88,11 @@ func (m MediaFileProcessor) processFile(directory string, filename string) Media
 	if err != nil {
 		log.Fatal(err)
 	}
-	// checksum := m.generateChecksum(file_path, 8192)
-
-	fileBytes, err := ioutil.ReadFile(file_path)
-	if err != nil {
-		log.Fatal(err)
-	}
+	checksum := m.generateChecksum(file_path, 1073741824)
 
 	fmt.Println("Getting MIME types")
-	mime_type := http.DetectContentType(fileBytes)
-
+	extension := strings.Split(file_path, ".")
+	mime_type := mime.TypeByExtension(extension[len(extension)-1])
 	id_int := rand.Int()
 	id := strconv.Itoa(id_int)
 
@@ -92,7 +104,7 @@ func (m MediaFileProcessor) processFile(directory string, filename string) Media
 		mime_type:   mime_type,
 		created_at:  file_stats.ModTime(),
 		modified_at: file_stats.ModTime(),
-		// checksum:    checksum,
+		checksum:    checksum,
 	}
 
 	fmt.Println("Probing the given file")
@@ -103,12 +115,6 @@ func (m MediaFileProcessor) processFile(directory string, filename string) Media
 	if err != nil {
 		log.Panicf("Error getting the probeData: %v", err)
 	}
-
-	buf, err := json.MarshalIndent(probeData, "", " ")
-	if err != nil {
-		log.Panicf("Error Marshal the json: %v", err)
-	}
-	fmt.Println(string(buf))
 	fmt.Println("Getting metadata of Audio and Video streams")
 
 	video_stream := probeData.FirstVideoStream()
@@ -242,11 +248,21 @@ func ExampleReadFrameAsJpeg(inFileName string, frameNum int) io.Reader {
 	buf := bytes.NewBuffer(nil)
 	err := ffmpeg_go.Input(inFileName).
 		Filter("select", ffmpeg_go.Args{fmt.Sprintf("gte(n,%d)", frameNum)}).
-		Output("pipe:", ffmpeg_go.KwArgs{"vframes": 1, "format": "image2", "vcodec": "mjpeg"}).
+		Output("pipe:", ffmpeg_go.KwArgs{"vframes": 10, "format": "image2", "vcodec": "mjpeg"}).
 		WithOutput(buf, os.Stdout).
 		Run()
 	if err != nil {
 		panic(err)
 	}
 	return buf
+}
+
+func contains(slice []string, item string) bool {
+	for _, v := range slice {
+		if v == item {
+			return true
+		}
+	}
+
+	return false
 }
